@@ -53,6 +53,28 @@ library(emmeans)
       f$HIncome_3level <- factor(f$HIncome_3level)  
       f$HIncome_3level <- relevel(f$HIncome_3level, ref = "<$30,000")
       
+      #Label original Income variable 
+          income_labels <- c(
+            "Less than $10,000",
+            "$10,001 - $15,000",
+            "$15,001 – $20,000",
+            "$20,001 - $25,000",
+            "$25,001 - $29,999",
+            "$30,000 - $40,000",
+            "$40,001 - $50,000",
+            "$50,001 - $75,000",
+            "$75,001 - $100,000",
+            "$100,001 - $150,000",
+            "$150,001 - $200,000",
+            "$200,001 - $250,000",
+            "More than $250,000"
+          )
+        
+          f$HIncome_f <- factor(f$HIncome, 
+                              levels = 1:13, 
+                              labels = income_labels)
+      
+
       #Variable prep for mediation models 
       # Create dummy variables for ref
       dummies <- model.matrix(~ ref - 1, data = f)
@@ -190,9 +212,7 @@ library(emmeans)
       #Educational attainment  
       m <- glm(ParticipateT2 ~ Education, data = f, family = binomial())
       summary(m)
-      exp(m$coefficients)
-      exp(confint(m))
-      
+
       #Job Class
       m <- glm(ParticipateT2 ~ Jobclass, data = f, family = binomial())
       summary(m)
@@ -669,7 +689,7 @@ library(emmeans)
 
     
  
-#Covariates----
+#Covariates (& Differences by Age and Sex)----
 
   #Hypothesis 1: Environmental safety positively related to social safety 
       #Candidate covariates: Age, Sex, Race, Ethnicity, Income 
@@ -744,28 +764,27 @@ library(emmeans)
       #Relevant covariates after analyses (see below): Age, Sex, HIncome 
       
       #Correlations between environmental safety, social vigilance, & age 
-      h2cov <- subset (f, select = c(TotalCrime_1, TotalCrime_5, TotalCrime_10, mEMASVQTV, Age))
+      h2cov <- subset (f, select = c(TotalCrime_1z, TotalCrime_5z, TotalCrime_10z, mEMASVQTV_boxcox, Age))
       print((corr.test(h2cov)), short=FALSE)
       corPlot(h2cov, stars = TRUE)
       
       #Social vigilance by age 
-      m1 <- lm(mEMASVQTV ~ Age, data = f)
+      m1 <- lm(mEMASVQTV_boxcox ~ Age, data = f)
       summary(m1)
-      
-
+     
       #Social vigilance differences by sex 
-      t.test(mEMASVQTV ~ Sex, data = f) 
-      tapply(f$mEMASVQTV, f$Sex, sd, na.rm = TRUE)
-      result <- t.test(mEMASVQTV ~ Sex, data = f) 
+      t.test(mEMASVQTV_boxcox ~ Sex, data = f) 
+      tapply(f$mEMASVQTV_boxcox, f$Sex, sd, na.rm = TRUE)
+      result <- t.test(mEMASVQTV_boxcox ~ Sex, data = f) 
       result$estimate 
       diff(result$estimate)  
 
       #Social vigilance differences by race/ethnicity
-      anova_result <- aov(f$mEMASVQTV ~ f$ref)
+      anova_result <- aov(f$mEMASVQTV_boxcox ~ f$ref)
       summary(anova_result)
 
       #Social vigilance differences by Income 
-      anova_result <- aov(f$mEMASVQTV ~ f$HIncome_3level)
+      anova_result <- aov(f$mEMASVQTV_boxcox ~ f$HIncome_3level)
       summary(anova_result)
            
    
@@ -783,15 +802,19 @@ library(emmeans)
 
     #FCCA
       #Correlations between social vigilance, change in fcca, age, BMI, resting SBP, resting DBP, time 1 fcca 
-      h4cov <- subset (f, select = c(mEMASVQTV, CMMFCCAV1, Age, BMIT1, SBPT1, DBPT1, MMFCCAV1T1 ))
+      h4cov <- subset (f, select = c(mEMASVQTV_boxcox, CMMFCCAV1_w, Age, BMIT1, SBPT1, DBPT1, MMFCCAV1T1 ))
       print((corr.test(h4cov)), short=FALSE)
       corPlot(h4cov, stars = TRUE)
+      
+      #Change in FCCA differences by Age 
+      m1 <- lm(CMMFCCAV1_w ~ Age, data = f)
+      summary(m1)
   
       #Change in FCCA differences by Sex 
-      t.test(CMMFCCAV1 ~ Sex, data = f) 
+      t.test(CMMFCCAV1_w ~ Sex, data = f) 
 
       #Change in FCCA differences by Ethnicity 
-      t.test(CMMFCCAV1 ~ Ethnicity, data = f) 
+      t.test(CMMFCCAV1_w ~ Ethnicity, data = f) 
 
       #Change in FCCA differences by menopausal status 
       f$Sex_num <- as.numeric(f$Sex)
@@ -801,147 +824,167 @@ library(emmeans)
       table(f$MenopT1_V2)
       f$MenopT1_V2 <- as.factor(f$MenopT1_V2)
       
-      anova_result <- aov(f$CMMFCCAV1 ~ f$MenopT1_V2)
+      anova_result <- aov(f$CMMFCCAV1_w ~ f$MenopT1_V2)
       summary(anova_result) 
 
       #Change in FCCA differences by blood pressure meds 
-      t.test(CMMFCCAV1 ~ MedBT1, data = f)
+      t.test(CMMFCCAV1_w ~ MedBT1, data = f)
 
       #Change in FCCA differences by lipid meds   
-      t.test(CMMFCCAV1 ~ MedLipT1, data = f)
-      tapply(f$CMMFCCAV1, f$MedLipT1, sd, na.rm = TRUE)
+      t.test(CMMFCCAV1_w ~ MedLipT1, data = f)
+      tapply(f$CMMFCCAV1_w, f$MedLipT1, sd, na.rm = TRUE)
 
       #Change in FCCA differences by other cardiac meds   
-      t.test(CMMFCCAV1 ~ MedCT1, data = f) 
+      t.test(CMMFCCAV1_w ~ MedCT1, data = f) 
       
       #Change in FCCA differences by diabetes meds  
-      t.test(CMMFCCAV1 ~ MedDT1, data = f)
+      t.test(CMMFCCAV1_w ~ MedDT1, data = f)
 
       #Change in FCCA differences by Race/Ethnicity
-      anova_result <- aov(f$CMMFCCAV1 ~ f$ref)
+      anova_result <- aov(f$CMMFCCAV1_w ~ f$ref)
       summary(anova_result) 
 
       #Change in FCCA differences by Income
-      anova_result <- aov(f$CMMFCCAV1 ~ f$HIncome_3level)
+      anova_result <- aov(f$CMMFCCAV1_w ~ f$HIncome_3level)
       summary(anova_result) 
 
     
     #BIF
       #Correlations between social vigilance, change in bif, age, BMI, resting SBP, resting DBP, time 1 bif
-      h4covb <- subset (f, select = c(mEMASVQTV, CMMBIFV1, Age, BMIT1, SBPT1, DBPT1, MMBIFV1T1 ))
+      h4covb <- subset (f, select = c(mEMASVQTV_boxcox, CMMBIFV1_w, Age, BMIT1, SBPT1, DBPT1, MMBIFV1T1 ))
       print((corr.test(h4covb)), short=FALSE)
       corPlot(h4covb, stars = TRUE)
+      
+      #Change in BIF differences by Age 
+      m1 <- lm(CMMBIFV1_w ~ Age, data = f)
+      summary(m1)
 
       #Change in BIF differences by Sex 
-      t.test(CMMBIFV1 ~ Sex, data = f)
-      tapply(f$CMMBIFV1, f$Sex, sd, na.rm = TRUE)
-      result <- t.test(CMMBIFV1 ~ Sex, data = f)
+      t.test(CMMBIFV1_w ~ Sex, data = f)
+      tapply(f$CMMBIFV1_w, f$Sex, sd, na.rm = TRUE)
+      result <- t.test(CMMBIFV1_w ~ Sex, data = f)
       result$estimate 
       diff(result$estimate)  
       
       #Change in BIF differences by menopausal status 
-      anova_result <- aov(f$CMMBIFV1 ~ f$MenopT1_V2)
+      anova_result <- aov(f$CMMBIFV1_w ~ f$MenopT1_V2)
       summary(anova_result)
       TukeyHSD(anova_result) #Menopausal status not included in covariates because it is driven by sex difference (already included in covariates)
       
       #Change in BIF differences by blood pressure meds 
-      t.test(CMMBIFV1 ~ MedBT1, data = f)
+      t.test(CMMBIFV1_w ~ MedBT1, data = f)
 
       #Change in BIF differences by lipid meds   
-      t.test(CMMBIFV1 ~ MedLipT1, data = f) 
+      t.test(CMMBIFV1_w ~ MedLipT1, data = f) 
 
       #Change in BIF differences by other cardiac meds   
-      t.test(CMMBIFV1 ~ MedCT1, data = f) 
+      t.test(CMMBIFV1_w ~ MedCT1, data = f) 
       
       #Change in BIF differences by diabetes meds   
-      t.test(CMMBIFV1 ~ MedDT1, data = f)
+      t.test(CMMBIFV1_w ~ MedDT1, data = f)
 
       #Change in BIF differences by Race/Ethnicity
-      anova_result <- aov(f$CMMBIFV1 ~ f$ref)
+      anova_result <- aov(f$CMMBIFV1_w ~ f$ref)
       summary(anova_result) 
 
       #Change in BIF differences by Income
-      anova_result <- aov(f$CMMBIFV1 ~ f$HIncome_3level)
+      anova_result <- aov(f$CMMBIFV1_w ~ f$HIncome_3level)
       summary(anova_result) 
 
     
     #ICA
       #Correlations between social vigilance, change in ICA, age, BMI, resting SBP, resting DBP, time 1 ICA 
-      h4covi <- subset (f, select = c(mEMASVQTV, CMMICAV1, Age, BMIT1, SBPT1, DBPT1, MMICAV1T1 ))
+      h4covi <- subset (f, select = c(mEMASVQTV_boxcox, CMMICAV1_w, Age, BMIT1, SBPT1, DBPT1, MMICAV1T1 ))
       print((corr.test(h4covi)), short=FALSE)
       corPlot(h4covi, stars = TRUE)
 
       #Change in ICA differences by Sex 
-      t.test(CMMICAV1 ~ Sex, data = f) #p = 0.707
+      t.test(CMMICAV1_w ~ Sex, data = f) 
 
       #Change in ICA differences by menopausal status 
-      anova_result <- aov(f$CMMICAV1 ~ f$MenopT1_V2)
+      anova_result <- aov(f$CMMICAV1_w ~ f$MenopT1_V2)
       summary(anova_result) 
 
       #Change in ICA differences by blood pressure meds 
-      t.test(CMMICAV1 ~ MedBT1, data = f) 
+      t.test(CMMICAV1_w ~ MedBT1, data = f) 
 
       #Change in ICA differences by lipid meds   
-      t.test(CMMICAV1 ~ MedLipT1, data = f) 
-      tapply(f$CMMICAV1, f$MedLipT1, sd, na.rm = TRUE)
+      t.test(CMMICAV1_w ~ MedLipT1, data = f) 
+      tapply(f$CMMICAV1_w, f$MedLipT1, sd, na.rm = TRUE)
 
       #Change in ICA differences by other cardiac meds   
-      t.test(CMMICAV1 ~ MedCT1, data = f) 
+      t.test(CMMICAV1_w ~ MedCT1, data = f) 
       
       #Change in ICA differences by diabetes meds   
-      t.test(CMMICAV1 ~ MedDT1, data = f) 
-      tapply(f$CMMICAV1, f$MedDT1, sd, na.rm = TRUE)
+      t.test(CMMICAV1_w ~ MedDT1, data = f) 
+      tapply(f$CMMICAV1_w, f$MedDT1, sd, na.rm = TRUE)
 
       #Change in ICA differences by Race/Ethnicity
-      anova_result <- aov(f$CMMICAV1 ~ f$ref)
+      anova_result <- aov(f$CMMICAV1_w ~ f$ref)
       summary(anova_result)
 
       #Change in ICA differences by Income
-      anova_result <- aov(f$CMMICAV1 ~ f$HIncome_3level)
+      anova_result <- aov(f$CMMICAV1_w ~ f$HIncome_3level)
       summary(anova_result) #p = 0.294
 
     
     #BIF/ICA
       #Correlations between social vigilance, change in BIF/ICA, age, BMI, resting SBP, resting DBP, time 1 BIF/ICA 
-      h4covc <- subset (f, select = c(mEMASVQTV, CCBIFICAV1, Age, BMIT1, SBPT1, DBPT1, MMBIFICAV1T1))
+      h4covc <- subset (f, select = c(mEMASVQTV_boxcox, CCBIFICAV1_w, Age, BMIT1, SBPT1, DBPT1, MMBIFICAV1T1))
       print((corr.test(h4covc)), short=FALSE)
       corPlot(h4covc, stars = TRUE)
       
       #Change in BIF/ICA differences by Sex 
-      t.test(CCBIFICAV1 ~ Sex, data = f) 
+      t.test(CCBIFICAV1_w ~ Sex, data = f) 
 
       #Change in BIF/ICA differences by menopausal status 
-      anova_result <- aov(f$CCBIFICAV1 ~ f$MenopT1_V2)
+      anova_result <- aov(f$CCBIFICAV1_w ~ f$MenopT1_V2)
       summary(anova_result) 
    
       #Change in BIF/ICA differences by blood pressure meds 
-      t.test(CCBIFICAV1 ~ MedBT1, data = f)
+      t.test(CCBIFICAV1_w ~ MedBT1, data = f)
 
       #Change in BIF/ICA differences by lipid meds   
-      t.test(CCBIFICAV1 ~ MedLipT1, data = f) 
+      t.test(CCBIFICAV1_w ~ MedLipT1, data = f) 
 
       #Change in BIF/ICA differences by other cardiac meds   
-      t.test(CCBIFICAV1 ~ MedCT1, data = f) 
+      t.test(CCBIFICAV1_w ~ MedCT1, data = f) 
 
       #Change in BIF/ICA differences by diabetes meds
-      t.test(CCBIFICAV1 ~ MedDT1, data = f)
+      t.test(CCBIFICAV1_w ~ MedDT1, data = f)
 
       #Change in BIF/ICA differences by Race/Ethnicity
-      anova_result <- aov(f$CCBIFICAV1 ~ f$ref)
+      anova_result <- aov(f$CCBIFICAV1_w ~ f$ref)
       summary(anova_result) 
 
       #Change in BIF/ICA differences by Income
-      anova_result <- aov(f$CCBIFICAV1 ~ f$HIncome_3level)
+      anova_result <- aov(f$CCBIFICAV1_w ~ f$HIncome_3level)
       summary(anova_result) 
 
       
 
 #Descriptives----
-      summary(f$Sex)
-      summary(f$ref)
-      summary(f$HIncome_3level)
-      summary(f$MedLipT1)
-      summary(f$MedDT1)
+      f %>%
+        count(Sex) %>%
+        mutate(percentage = n / sum(n) * 100)
+      
+            f %>%
+        count(ref) %>%
+        mutate(percentage = n / sum(n) * 100)
+      psych::describe(f$Age)
+      f %>%
+        count(HIncome_f) %>%
+        mutate(percentage = n / sum(n) * 100)
+      summary(f$HIncome)
+      f %>%
+        count(HIncome_3level) %>%
+        mutate(percentage = n / sum(n) * 100)
+      f %>%
+        count(MedLipT1) %>%
+        mutate(percentage = n / sum(n) * 100)
+      f %>%
+        count(MedDT1) %>%
+        mutate(percentage = n / sum(n) * 100)
       psych::describe(f$TotalCrime_1)
       psych::describe(f$TotalCrime_5)
       psych::describe(f$TotalCrime_10)
@@ -1194,7 +1237,7 @@ library(emmeans)
         
      #Adjusted
       lm7.2 <- lm(mEMASVQTV_boxcox ~ socsaf_mean + Age + Sex, data=f)
-      Anova(lm7.1, type="III")
+      Anova(lm7.2, type="III")
       summary(lm7.2) 
       confint(lm7.2)
 
